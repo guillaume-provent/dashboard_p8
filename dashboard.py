@@ -439,5 +439,20 @@ with col3:
                 columns=['Minimum', 'Maximum', 'Moyenne', 'Médiane']
             )
             st.write("Dossier actuel : ", current_value)
+
+            # CSS personnalisé pour changer la couleur des titres de colonnes et de lignes
+            st.markdown(
+                """
+                <style>
+                thead th {
+                    color: black !important;
+                }
+                tbody th {
+                    color: black !important;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
             
             st.table(stats)
