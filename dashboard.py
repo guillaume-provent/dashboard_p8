@@ -43,9 +43,9 @@ ACC_NEG_COL = 'MidnightBlue'
 # Configuration de la page Streamlit :
 st.set_page_config(
     page_title="Tableau de bord crédit",
-    layout="wide",  # Mise en page centrée
+    layout="wide",                     # Mise en page centrée
     initial_sidebar_state="expanded",  # Garder la sidebar toujours visible
-    page_icon=":euro:"  # Icône de la page
+    page_icon=":euro:"                 # Icône de la page
 )
 
 # Injection de CSS personnalisé pour styliser les boutons :
@@ -69,56 +69,59 @@ st.markdown("""
         font-weight: bold !important;
     }
     </style>
-    """, unsafe_allow_html=True)
-
+    """, unsafe_allow_html=True
+           )
 
 def get_app_data(sk_id_curr):
+    # Connexion à l'API database pour récupérer les données d'un dossier :
     response = requests.get(f"{DATA_API_URL}/get_app/{sk_id_curr}")
     return response.json()
 
 def update_app_data(data):
+    # Connexion à l'API database pour enregistrer les données d'un dossier :
     response = requests.put(f"{DATA_API_URL}/update_app", json=data)
     return response.json()
 
 def create_app_data(data):
+    # Connexion à l'API database pour créer un nouveau dossier :
     response = requests.post(f"{DATA_API_URL}/create_app", json=data)
     return response.json()
 
 def predict(data):
+    # Connexion à l'API de prédicition pour analyser un dossier :
     response = requests.post(PRED_API_URL, json=data)
     return response.json()
 
 # Fonction pour initialiser les données du dossier
 def init_app_data():
+    # Réinitialisation du dossier et des données affichés :
     return {key: "" for key in DESCRIPTIONS}
+
+def toggle_colors():
+    # Bascule de l'état des couleurs :
+    st.session_state.colors_toggled = not st.session_state.colors_toggled
+
+def color_with_alpha(name, alpha):
+    # Application de la transparence à une couleur :
+    rgb_color = mcolors.to_rgb(name)
+    return f"rgba({int(rgb_color[0]*255)}, {int(rgb_color[1]*255)}, {int(rgb_color[2]*255)}, {alpha})"
 
 # Initialisation de l'état de session pour le bouton "Couleurs"
 if 'colors_toggled' not in st.session_state:
     st.session_state.colors_toggled = False
-
-# Fonction pour basculer l'état des couleurs
-def toggle_colors():
-    st.session_state.colors_toggled = not st.session_state.colors_toggled
-
-def color_with_alpha(name, alpha):
-    # Convertir le nom de couleur en RGB
-    rgb_color = mcolors.to_rgb(name)
-    # Retourner la couleur en RGBA avec transparence
-    return f"rgba({int(rgb_color[0]*255)}, {int(rgb_color[1]*255)}, {int(rgb_color[2]*255)}, {alpha})"
 
 # Menu de navigation entre les pages :
 st.sidebar.title("Tableau de bord dossier de prêt")
 page = st.sidebar.radio("Sélectionnez une page :", ["Aide", "Analyser le dossier", "Expliquer la décision", "Comparer le dossier"])
 st.session_state.page = page
 
+# Bouton pour basculer les couleurs :
 for i in range(5):
     st.sidebar.write("")
-
-# Bouton pour basculer les couleurs
 if st.sidebar.button("Changer les couleurs", on_click=toggle_colors):
     pass
 
-# Définir les couleurs en fonction de l'état du bouton
+# Définition des couleurs en fonction de l'état du bouton :
 if st.session_state.colors_toggled:
     pos_color = ACC_POS_COL
     neg_color = ACC_NEG_COL
@@ -129,7 +132,6 @@ else:
 # Gestion de l'état de session pour suivre les modifications :
 if 'current_app_data' not in st.session_state:
     st.session_state.current_app_data = init_app_data()
-
 if 'sk_id_curr' not in st.session_state:
     st.session_state.sk_id_curr = ""
 
@@ -159,7 +161,6 @@ with col1:
 
     # Actions pour le bouton "Afficher le dossier" :
     if show_app and st.session_state.sk_id_seek:
-        
         app_data = get_app_data(st.session_state.sk_id_seek)
         if "error" in app_data:
             st.error(app_data["error"])
@@ -168,9 +169,8 @@ with col1:
             st.session_state.current_app_data = app_data
             st.session_state.sk_id_curr = st.session_state.sk_id_seek
 
-    # Actions pour le bouton 'Nouveau dossier' :
+    # Actions pour le bouton "Nouveau dossier" :
     if new_app:
-
         # Rénitialisation des données du dossier et des champs du formulaire :
         st.session_state.current_app_data = init_app_data()
         st.session_state.sk_id_curr = ""  
@@ -180,7 +180,6 @@ with col1:
     # Actions pour le bouton "Enregistrer les modifications" :
     if submit_button:
         if st.session_state.sk_id_curr:
-
             # Si ID du dossier renseigné, mise à jour les données existantes :
             response = update_app_data({
                 "SK_ID_CURR": st.session_state.sk_id_curr,
@@ -192,7 +191,6 @@ with col1:
                 st.success(response["message"])
         else:
             if st.session_state.current_app_data != init_app_data():
-                
                 # Si ID du dossier non renseigné, création d'un nouveau dossier :
                 response = create_app_data(st.session_state.current_app_data)
                 if "error" in response:
@@ -206,7 +204,7 @@ with col1:
         app_data = init_app_data()
     for key in app_data:
         if key == 'SK_ID_CURR':
-            continue  # Exclure SK_ID_CURR du formulaire
+            continue
         st.session_state.current_app_data[key] = st.text_input(
             DESCRIPTIONS[key][0], app_data[key], placeholder="Non renseigné"
             )
@@ -214,13 +212,12 @@ with col1:
 # Colonne de droite pour l'analyse du dossier :
 with col3:
     
-    # Page d'Aide par défaut :
+    # Page "Aide" par défaut :
     if 'page' not in st.session_state:
         st.session_state.page = "Aide"
 
     if st.session_state.page == "Aide":
-        
-        # Contenu de la page "Analyser le dossier" :
+        # Contenu de la page "Aide" :
         st.markdown("## Tableau de bord dossier de prêt")
         st.write("Bienvenue dans l'application d'analyse de dossier crédit.")
         st.write("Utilisez le menu à gauche de l'écran pour naviguer dans l'application :")
@@ -243,7 +240,6 @@ with col3:
         
         # Contenu de la page "Analyser le dossier" :
         st.markdown("## Analyse du dossier")
-
         prediction_data = {k: v for k, v in st.session_state.current_app_data.items() if k != "SK_ID_CURR"}
         prediction_response = predict(prediction_data)
         
@@ -263,7 +259,6 @@ with col3:
             # Chargement des probabilité et seuil :
             prob = round(prediction_response['Probabilite'] * 100, 3)
             threshold = round(prediction_response['Seuil'] * 100, 3)
-            
             st.write("#### Probabilité de défaut de paiement :")
             st.write(f"##### (seuil de refus du dossier : {threshold} %)")
             
@@ -286,12 +281,10 @@ with col3:
                     }
                 }
             ))
-            
             fig.add_annotation(x=0, y=-0.2, text="Risque faible", showarrow=False,
                                xref="paper", yref="paper", align="left", font=dict(size=24, color=pos_color))
             fig.add_annotation(x=1, y=-0.2, text="Risque élevé", showarrow=False,
                                xref="paper", yref="paper", align="right", font=dict(size=24, color=neg_color))
-               
             st.plotly_chart(fig)
         
     # Page "Expliquer la décision" :
@@ -299,7 +292,6 @@ with col3:
         
         # Contenu de la page "Expliquer la décision" :
         st.markdown("## Interprétation de la décision")
-
         prediction_data = {k: v for k, v in st.session_state.current_app_data.items() if k != "SK_ID_CURR"}
         prediction_response = predict(prediction_data)
     
@@ -318,7 +310,7 @@ with col3:
                                  feature_names=[DESCRIPTIONS[k][1] for k in list(prediction_data.keys())]),
                 max_display=14, show=False
             )
-            
+            # Gestion de la bascule des couleurs :
             default_pos_color = "#ff0051"
             default_neg_color = "#008bfb"
             positive_color = neg_color
@@ -338,7 +330,8 @@ with col3:
                         elif mcolors.to_hex(fcc.get_color()) == default_neg_color:
                             fcc.set_color(negative_color)                
             st.pyplot(fig)
-            
+
+        # Commentaires du waterfall plot :
         st.write("Les flèches orientées vers la gauche indiquent une réduction du risque de défaut de paiement")
         st.write("Les flèches orientées vers la droite indiquent une agravation du risque de défaut de paiement")
         
@@ -357,7 +350,7 @@ with col3:
                 box_features
             )
 
-            # Soumission du formulaire :
+            # Bouton "Comparer" :
             show_button = st.form_submit_button(label='Comparer')            
 
         # Actions du bouton "Comparer" :
@@ -413,10 +406,8 @@ with col3:
                 line=dict(color='blue', dash='solid')
             )
 
-            # Création de la figure :
+            # Affichage du graphique :
             fig = go.Figure(data=[target_0, target_1, line])
-
-            # Mise en forme de la figure :
             fig.update_layout(
                 width=800,
                 height=600,
@@ -428,7 +419,6 @@ with col3:
                 xaxis_title=selected_feature,  # Titre de l'axe x
                 yaxis_title="Densité (volume) de dossiers"  # Titre de l'axe y
             )
-            
             st.plotly_chart(fig)
             
             # Affichage du tableau des données statistiques :
@@ -440,7 +430,7 @@ with col3:
             )
             st.write("Dossier actuel : ", current_value)
 
-            # CSS personnalisé pour changer la couleur des titres de colonnes et de lignes
+            # CSS personnalisé pour les titres de colonnes et de lignes en noir :
             st.markdown(
                 """
                 <style>
@@ -454,5 +444,4 @@ with col3:
                 """,
                 unsafe_allow_html=True
             )
-            
             st.table(stats)
